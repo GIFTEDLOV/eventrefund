@@ -1,7 +1,7 @@
 {
-  "name": "genlayer-football-betting",
+  "name": "eventrefund-frontend",
   "version": "1.0.0",
-  "description": "GenLayer Football Betting - AI-powered prediction betting on GenLayer blockchain.",
+  "description": "EventRefund neutral event-refund eligibility decisions on GenLayer.",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
@@ -22,7 +22,7 @@
     "@wagmi/core": "^2.22.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "genlayer-js": "^1.1.8",
+    "genlayer-js": "1.1.8",
     "lucide-react": "^0.548.0",
     "next": "^16.0.0",
     "react": "^19.2.0",

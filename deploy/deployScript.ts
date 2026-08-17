@@ -6,11 +6,12 @@ import {
   GenLayerClient,
   DecodedDeployData,
   GenLayerChain,
+  ExecutionResult,
 } from "genlayer-js/types";
 import { localnet } from "genlayer-js/chains";
 
 export default async function main(client: GenLayerClient<any>) {
-  const filePath = path.resolve(process.cwd(), "contracts/football_bets.py");
+  const filePath = path.resolve(process.cwd(), "contracts/event_refund.py");
 
   try {
     const contractCode = new Uint8Array(readFileSync(filePath));
@@ -24,17 +25,19 @@ export default async function main(client: GenLayerClient<any>) {
 
     const receipt = await client.waitForTransactionReceipt({
       hash: deployTransaction as TransactionHash,
-      status: TransactionStatus.ACCEPTED,
+      status: TransactionStatus.FINALIZED,
       retries: 200,
     });
 
     if (
       receipt.status !== 5 &&
       receipt.status !== 6 &&
-      receipt.statusName !== "ACCEPTED" &&
       receipt.statusName !== "FINALIZED"
     ) {
       throw new Error(`Deployment failed. Receipt: ${JSON.stringify(receipt)}`);
+    }
+    if (receipt.txExecutionResultName && receipt.txExecutionResultName !== ExecutionResult.FINISHED_WITH_RETURN) {
+      throw new Error(`Deployment execution failed. Receipt: ${JSON.stringify(receipt)}`);
     }
 
     const deployedContractAddress =

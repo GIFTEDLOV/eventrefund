@@ -1,0 +1,3 @@
+export type EventRecord = { event_id: string; organizer_address: string; title: string; original_schedule: string; original_venue: string; original_headliner: string; trigger_event_cancelled: boolean; trigger_date_changed: boolean; trigger_venue_changed: boolean; trigger_headliner_changed: boolean; evidence_url_a: string; evidence_url_b: string };
+export type TicketRecord = { ticket_id: string; event_id: string; holder_address: string; assessment_count: number; refund_authorized: boolean; latest_assessment_id: string };
+export type AssessmentRecord = { assessment_id: string; ticket_id: string; event_id: string; verdict: "REFUND_ELIGIBLE" | "NOT_ELIGIBLE" | "INCONCLUSIVE"; result_digest: string };

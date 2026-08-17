@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: genvm-lint check contracts/football_bets.py
+      - run: genvm-lint check contracts/event_refund.py
 
   test-direct:
     name: Direct Mode Tests
@@ -27,4 +27,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest tests/direct/ -v
+      - run: pytest tests/direct/ tests/pure/ -v
+      - run: python tools/mutation_test.py

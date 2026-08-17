@@ -1,143 +1,87 @@
-# Sample GenLayer project
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit/)
-[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/8Jm4v89VAu)
-[![Telegram](https://img.shields.io/badge/Telegram--T.svg?style=social&logo=telegram)](https://t.me/genlayer)
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/yeagerai.svg?style=social&label=Follow%20%40GenLayer)](https://x.com/GenLayer)
-[![GitHub star chart](https://img.shields.io/github/stars/yeagerai/genlayer-project-boilerplate?style=social)](https://star-history.com/#yeagerai/genlayer-js)
+# EventRefund
 
-## About
-This project includes the boilerplate code for a GenLayer use case implementation, specifically a football bets game.
+## Product
 
-## What's included
-- An example intelligent contract (Football Bets) with web access and LLM integration
-- **Direct mode tests** — fast, in-memory unit tests with web/LLM mocking (~ms per test)
-- **Integration tests** — full end-to-end tests against GenLayer Studio
-- **Contract linting** — static analysis to catch common contract issues before deployment
-- **CI pipeline** — GitHub Actions workflow for linting and direct tests
-- A production-ready Next.js 15 frontend with TypeScript, TanStack Query, and Radix UI
-- Configuration file template and deployment scripts
+EventRefund is a complete user-facing GenLayer application for neutral event-refund eligibility decisions. An organizer commits an event baseline, enables one or more of four supported refund triggers, and fixes exactly two public HTTPS evidence sources on different hostnames. A registered ticket holder can request an assessment using those same committed sources.
 
-## Requirements
-- Python >= 3.12
-- [GenLayer CLI](https://github.com/genlayerlabs/genlayer-cli) globally installed: `npm install -g genlayer`
-- GenLayer Studio (for integration tests and deployment): Install from [Docs](https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup#using-the-genlayer-studio) or use the hosted [GenLayer Studio](https://studio.genlayer.com/)
+## Problem
 
-## Project Structure
+Event cancellations and material event changes are often decided from scattered public notices. A centralized operator can misread the evidence, use a different source than the parties agreed, or silently change the rule after a ticket is registered. EventRefund makes the baseline, trigger set, evidence channels, assessment history, and final authorization queryable.
 
-```
-contracts/              # Python intelligent contracts
-tests/
-  direct/               # Fast in-memory tests (no Studio required)
-    test_create_bet.py   # Bet creation logic
-    test_resolve_bet.py  # Bet resolution with web/LLM mocks
-    test_views.py        # Read-only view methods
-  integration/           # Full tests against GenLayer Studio
-    test_football_bets.py
-    fixtures.py          # Expected state fixtures
-frontend/               # Next.js 15 app (TypeScript, TanStack Query, Radix UI)
-deploy/                 # TypeScript deployment scripts
-gltest.config.yaml      # Test runner network configuration
-pyproject.toml          # Python/pytest configuration
-.github/workflows/      # CI pipeline
-```
+## Why GenLayer
 
-## Quick Start
+The decision depends on public web evidence and language interpretation, not only deterministic on-chain data. GenLayer validators independently retrieve the committed text sources and independently evaluate the bounded question through the Equivalence Principle. The contract stores only the consensus-backed verdict and its deterministic result digest.
 
-### 1. Set up Python environment
+## How it works
+
+1. The organizer creates an immutable event with `EVENT_CANCELLED`, `DATE_CHANGED`, `VENUE_CHANGED`, and/or `HEADLINER_CHANGED` enabled.
+2. The organizer registers a unique ticket and holder address.
+3. Only that holder requests an assessment. No claim-time evidence URL is accepted.
+4. The leader and validators render the two precommitted URLs as readable text and independently derive a strict one-field verdict.
+5. `NOT_ELIGIBLE` and `INCONCLUSIVE` remain point-in-time history and do not lock the ticket. A finalized `REFUND_ELIGIBLE` result permanently issues a refund authorization.
+
+## Architecture
+
+- `contracts/event_refund.py`: small immutable event/ticket state, assessment history, and permanent authorization certificate.
+- `gl.vm.run_nondet_unsafe`: custom leader/validator equivalence. Validators re-fetch both sources and compare the independently derived verdict, never raw HTML/text and never only the leader’s enum.
+- `frontend/`: Next.js app with real GenLayerJS reads, wallet writes, event/ticket/assessment workflows, and authorization verification.
+- `tools/canonical_digest.py`: independent compact canonical digest calculator.
+- `tools/mutation_test.py`: deliberate critical-gate mutation harness.
+
+## Use
 
 ```shell
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements.txt
+.venv/Scripts/genvm-lint.exe lint contracts/event_refund.py
+.venv/Scripts/genvm-lint.exe validate contracts/event_refund.py
+.venv/Scripts/python.exe -m pytest tests/pure -q
+.venv/Scripts/python.exe tools/mutation_test.py
+npm install --no-audit --no-fund --ignore-scripts
+npm run build
 ```
 
-### 2. Lint your contracts
+For a live frontend, copy `frontend/.env.example` to `frontend/.env`, set `NEXT_PUBLIC_CONTRACT_ADDRESS` to a deployed EventRefund address, choose the RPC/network, then run `npm run dev`.
 
-Run the GenVM linter to catch issues before deployment:
+## Live proof
 
-```shell
-genvm-lint check contracts/football_bets.py
-```
+No Bradbury deployment or real-world REFUND_ELIGIBLE assessment is claimed in this checkout. No private key was requested or used. The release gate stopped before live deployment because the available environment did not provide an operational Studio/Bradbury account and the required genuinely public live fixture could not be established safely.
 
-The linter catches:
-- Forbidden imports and non-deterministic calls
-- Invalid storage types (must use `TreeMap`, `DynArray`, `u256`, etc.)
-- Missing decorators and return type annotations
-- Non-deterministic operations outside equivalence principle blocks
-- And [20+ other rules](https://github.com/genlayerlabs/genvm-linter)
+## Security/trust model
 
-### 3. Run direct mode tests
+- Evidence URLs require HTTPS, bounded length, no fragments, no localhost, no IPv4 literals, and distinct hostnames; they are immutable after event creation.
+- Retrieved pages are bounded readable text and are untrusted data. Page instructions cannot alter evaluator instructions.
+- Model output must be exactly one JSON object with exactly one `verdict` key. Malformed, extra-key, missing-key, unknown, unavailable, timeout, failure, or disagreement paths fail closed to `INCONCLUSIVE` or leave no state change; they never become `NOT_ELIGIBLE`.
+- Validators independently retrieve and interpret the same committed sources. The leader is not trusted.
+- Writes use a client-side pending-hash record, broadcast once, reconcile the same hash, require finality and successful execution, then verify expected stored state.
 
-Direct mode tests run contracts in-memory without needing GenLayer Studio. They use mocks for web requests and LLM calls, giving you fast feedback (~milliseconds per test):
+## Limitations
 
-```shell
-pytest tests/direct/ -v
-```
+- EventRefund provides an agreed evidence-based refund authorization, not a court judgment.
+- It does not itself process the monetary refund in v1.
+- Evidence URLs are agreed public sources; consensus does not cryptographically prove that every source statement is truthful.
+- `NOT_ELIGIBLE` is a point-in-time assessment.
+- Only behaviors actually proven live may be described as Bradbury-proven; none are claimed here.
 
-Direct mode features used in these tests:
-- `direct_deploy("contracts/file.py")` — deploy contract in memory
-- `direct_vm.sender = address` — set transaction sender
-- `direct_vm.mock_web(pattern, response)` — mock HTTP/render calls
-- `direct_vm.mock_llm(pattern, response)` — mock LLM responses
-- `direct_vm.expect_revert("message")` — assert expected failures
-- `direct_vm.clear_mocks()` — reset mocks between calls
+## Developer/API detail
 
-### 4. Deploy the contract
+Contract API:
 
-1. Choose your network: `genlayer network`
-2. Deploy: `genlayer deploy` (runs the script in `/deploy/deployScript.ts`)
+- `create_event(...)`
+- `register_ticket(ticket_id, event_id, holder_address)`
+- `assess_ticket(ticket_id)`
+- `get_event(...)`, `get_ticket(...)`, `get_assessment(...)`, `get_refund_authorization(...)`
+- `get_event_ids()`, `get_ticket_ids()`, `get_assessment_ids()`
+- `contract_info()`
 
-### 5. Run integration tests
+Selected pinned sources:
 
-Integration tests deploy the contract to GenLayer Studio and test with real consensus:
+- Official boilerplate commit: `e685f1f12c4c357787d48390692a654baf576f03`
+- `genlayer-js`: `1.1.8`, official main commit `1b7f50a3a3f2963ea857941b0fb386081dd5c326`
+- `genlayer-py`: `0.18.0`, commit `a3dc35e04898e3889cbfa855bcaf7d2664675b8f`
+- `genlayer-test`: `0.29.2`, commit `343e3a358f9e235a93b49c60721ce7676585ff07`
+- `genvm-linter`: `0.10.0`, commit `fa4a4d4536b28fdc2730e13a983ba01b69ccc6f3`
+- Installed CLI: `genlayer 0.39.1`; Node `24.14.0`; Python Windows `3.14.3`; WSL Python `3.12.3`.
+- Contract/source/deployable SHA-256: `48b418d823ee8aaa7722c94631ca38c36399a3f27c05dbbaba314f3d376e1bc2`.
 
-```shell
-gltest tests/integration/ -v -s
-```
-
-These require GenLayer Studio running (local or hosted).
-
-### 6. Set up the frontend
-
-1. Copy `frontend/.env.example` to `frontend/.env`
-2. Add your deployed contract address as `NEXT_PUBLIC_CONTRACT_ADDRESS`
-3. Run:
-
-```shell
-cd frontend
-npm install
-npm run dev
-```
-
-The app will be available at http://localhost:3000/.
-
-## How the Football Bets Contract Works
-
-1. **Creating Bets**: Users bet on a football match by providing the game date, teams, and predicted winner.
-2. **Resolving Bets**: After the match, the contract fetches results from BBC Sport, uses an LLM to extract the score, and validates via the equivalence principle.
-3. **Points**: Correct predictions earn points. Users can query their points or the leaderboard.
-
-## Testing Strategy
-
-| Test Type | Command | Speed | Requires Studio |
-|-----------|---------|-------|-----------------|
-| **Lint** | `genvm-lint check contracts/*.py` | ~250ms | No |
-| **Direct** | `pytest tests/direct/ -v` | ~ms/test | No |
-| **Integration** | `gltest tests/integration/ -v -s` | ~min/test | Yes |
-
-**Recommended workflow:**
-1. Lint after every contract change
-2. Run direct tests frequently during development
-3. Run integration tests before deployment to verify consensus behavior
-
-For AI coding agents (Claude Code, Cursor, etc.), the linter and direct tests provide the fast feedback loop needed for iterative development without requiring a running Studio instance.
-
-## Community
-- **[Discord](https://discord.gg/8Jm4v89VAu)**: Discussions, support, and announcements
-- **[Telegram](https://t.me/genlayer)**: Informal chats and quick updates
-
-## Documentation
-For detailed information, see our [documentation](https://docs.genlayer.com/).
-
-## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The current linter’s semantic validation passed against its cached GenVM runner (`v0.6.0-rc2`).
