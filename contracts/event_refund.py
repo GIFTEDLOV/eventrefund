@@ -76,10 +76,10 @@ class EventRefund(gl.Contract):
     refund_authorizations: TreeMap[str, RefundAuthorization]
 
     def __init__(self):
-        self.events = TreeMap()
-        self.tickets = TreeMap()
-        self.assessments = TreeMap()
-        self.refund_authorizations = TreeMap()
+        self.events = gl.storage.inmem_allocate(TreeMap[str, Event])
+        self.tickets = gl.storage.inmem_allocate(TreeMap[str, Ticket])
+        self.assessments = gl.storage.inmem_allocate(TreeMap[str, Assessment])
+        self.refund_authorizations = gl.storage.inmem_allocate(TreeMap[str, RefundAuthorization])
 
     def _sender_address(self) -> str:
         return gl.message.sender_address.as_hex
