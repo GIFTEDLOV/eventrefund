@@ -45,7 +45,25 @@ For a live frontend, copy `frontend/.env.example` to `frontend/.env`, set `NEXT_
 
 ## Live proof
 
-No Bradbury deployment or real-world REFUND_ELIGIBLE assessment is claimed in this checkout. No private key was requested or used. The release gate stopped before live deployment because the available environment did not provide an operational Studio/Bradbury account and the required genuinely public live fixture could not be established safely.
+The representative live proof was completed on GenLayer Bradbury using the frozen contract source.
+
+- Network: Bradbury (`chainId 4221`), RPC `https://rpc-bradbury.genlayer.com`
+- Contract: `0x829a49A0B81fB344E407De254C82a36773832e93`
+- Contract SHA-256: `a9b846001e31bdedca0fbf53b9b7ac2db5407bdb1940db4c7aa6f42195b8a2d8`
+- Deployment transaction: `0x094d1719872cc25022485d467a7489676ab0ad8ce8a14988778f4beda57abccf`
+- Event creation: `0x2c8cc38c01df518c3cc4a5c237908c04eacf0e6c8347f9e88132f8c925cf2f56` — FINALIZED, FINISHED_WITH_RETURN, 5/5 AGREE
+- Event: `eventrefund-bradbury-20260818-marlow`
+- Corrected ticket registration: `0x2154cf6df772c3523935f741f58b53edb22d99fb5019db53a9b4a8b8c18f6fca` — FINALIZED, FINISHED_WITH_RETURN
+- Ticket: `eventrefund-marlow-ticket-001`
+- Assessment: `0x4f09495a79b08d423b880a601502fe3721c1b22b8aeb62c6184bc76a11443b39` — FINALIZED, FINISHED_WITH_RETURN, 5/5 AGREE
+- Assessment ID: `eventrefund-marlow-ticket-001#1`
+- Actual verdict: `INCONCLUSIVE`
+- Refund authorization: none (`{}`)
+- Stored and independently reproduced result digest: `ba7de080a3018a28edadfa20cded9e80adaa6a8a545127cdf2dccf26b20d61bc` — exact match
+
+This representative assessment demonstrates the fail-closed behavior: consensus produced `INCONCLUSIVE`, so the contract created no refund authorization. The result is reported as observed; it is not presented as a `REFUND_ELIGIBLE` proof.
+
+The first ticket-registration attempt is preserved as provenance. Transaction `0x0f3aab993c9c659cd5a32500dd61dc66207b0b276bdc1d969361118b535978c7` finalized with `FINISHED_WITH_ERROR` and `UserError: INVALID_HOLDER_ADDRESS`; no ticket state was created. The Bradbury CLI `v0.40.0-clarke.4` coerced the hexadecimal holder argument into `CalldataAddress` even though `register_ticket` expects a string. The corrected direct GenLayerJS string transport succeeded. Public transaction-hash evidence is preserved under `artifacts/`.
 
 ## Security/trust model
 
@@ -61,7 +79,7 @@ No Bradbury deployment or real-world REFUND_ELIGIBLE assessment is claimed in th
 - It does not itself process the monetary refund in v1.
 - Evidence URLs are agreed public sources; consensus does not cryptographically prove that every source statement is truthful.
 - `NOT_ELIGIBLE` is a point-in-time assessment.
-- Only behaviors actually proven live may be described as Bradbury-proven; none are claimed here.
+- Only behaviors actually proven live may be described as Bradbury-proven; this checkout proves the representative Bradbury flow and its observed `INCONCLUSIVE` result.
 
 ## Developer/API detail
 
@@ -81,7 +99,9 @@ Selected pinned sources:
 - `genlayer-py`: `0.18.0`, commit `a3dc35e04898e3889cbfa855bcaf7d2664675b8f`
 - `genlayer-test`: `0.29.2`, commit `343e3a358f9e235a93b49c60721ce7676585ff07`
 - `genvm-linter`: `0.10.0`, commit `fa4a4d4536b28fdc2730e13a983ba01b69ccc6f3`
-- Installed CLI: `genlayer 0.39.1`; Node `24.14.0`; Python Windows `3.14.3`; WSL Python `3.12.3`.
-- Contract/source/deployable SHA-256: `48b418d823ee8aaa7722c94631ca38c36399a3f27c05dbbaba314f3d376e1bc2`.
+- Live CLI: `genlayer 0.40.0-clarke.4`; Node `24.14.0`; Python Windows `3.14.3`; WSL Python `3.12.3`.
+- Bradbury RPC: `https://rpc-bradbury.genlayer.com` (`chainId 4221`).
+- `genlayer-js`: `1.1.8`, live proof commit `bf42f13a66a2bb762e5ef1065eb89789b9c45d4a`.
+- Contract/source/deployable SHA-256: `a9b846001e31bdedca0fbf53b9b7ac2db5407bdb1940db4c7aa6f42195b8a2d8`.
 
 The current linter’s semantic validation passed against its cached GenVM runner (`v0.6.0-rc2`).

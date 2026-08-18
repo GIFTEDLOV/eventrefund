@@ -10,7 +10,7 @@ const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "";
 
 function chain() { return process.env.NEXT_PUBLIC_GENLAYER_NETWORK === "testnet-bradbury" ? testnetBradbury : studionet; }
 export function contractAddress(): `0x${string}` { return CONTRACT_ADDRESS as `0x${string}`; }
-export function endpoint() { return process.env.NEXT_PUBLIC_GENLAYER_RPC_URL || (process.env.NEXT_PUBLIC_GENLAYER_NETWORK === "testnet-bradbury" ? "https://bradbury.genlayer.com/api" : "https://studio.genlayer.com/api"); }
+export function endpoint() { return process.env.NEXT_PUBLIC_GENLAYER_RPC_URL || (process.env.NEXT_PUBLIC_GENLAYER_NETWORK === "testnet-bradbury" ? "https://rpc-bradbury.genlayer.com" : "https://studio.genlayer.com/api"); }
 function makeClient(address?: string) { const config: Record<string, unknown> = { chain: chain(), endpoint: endpoint() }; if (address) { config.account = address as `0x${string}`; if (typeof window !== "undefined" && window.ethereum) config.provider = window.ethereum; } return createClient(config as never); }
 export async function readMethod(functionName: string, args: CalldataEncodable[] = []) { if (!CONTRACT_ADDRESS) throw new Error("Set NEXT_PUBLIC_CONTRACT_ADDRESS first."); return makeClient().readContract({ address: contractAddress(), functionName, args }); }
 function storageKey(key: string) { return `eventrefund:pending:${CONTRACT_ADDRESS}:${key}`; }
