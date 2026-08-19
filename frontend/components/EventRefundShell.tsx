@@ -1,9 +1,68 @@
 "use client";
 
 import Link from "next/link";
-import { useWallet } from "@/lib/genlayer/wallet";
-import { formatAddress } from "@/lib/genlayer/wallet";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { formatAddress, useWallet } from "@/lib/genlayer/wallet";
+import { PillButton } from "@/components/er/Primitives";
 
-export function EventRefundShell({ children }: { children: React.ReactNode }) { const wallet = useWallet(); return <div className="min-h-screen bg-[#080910] text-slate-100"><header className="border-b border-white/10 bg-[#0d0e18]/90 px-5 py-4"><div className="mx-auto flex max-w-6xl items-center justify-between gap-4"><Link href="/" className="text-lg font-semibold">Event<span className="text-fuchsia-300">Refund</span></Link><nav className="hidden gap-5 text-sm text-slate-300 sm:flex"><Link href="/events">Events</Link><Link href="/verify">Verify authorization</Link></nav><button className="rounded-full border border-fuchsia-300/40 px-3 py-2 text-xs" onClick={() => wallet.isConnected ? wallet.disconnectWallet() : wallet.connectWallet()}>{wallet.isConnected ? formatAddress(wallet.address) : "Connect wallet"}</button></div></header><main className="mx-auto max-w-6xl px-5 py-10">{children}</main></div>; }
-export function TechnicalDetails({ children }: { children: React.ReactNode }) { return <details className="mt-6 rounded-xl border border-white/10 bg-white/[.03] p-4 text-xs text-slate-400"><summary className="cursor-pointer text-slate-300">Technical details</summary><div className="mt-3 break-words">{children}</div></details>; }
-export function Stage({ value }: { value: string }) { return value ? <p className="rounded-lg border border-fuchsia-300/20 bg-fuchsia-300/10 px-3 py-2 text-sm text-fuchsia-100">{value}</p> : null; }
+const navigation = [
+  { href: "/events", label: "Events" },
+  { href: "/events/new", label: "Create event" },
+  { href: "/verify", label: "Verify ticket" },
+];
+
+function Wordmark({ light = false }: { light?: boolean }) {
+  return <Link href="/" className={`er-wordmark ${light ? "er-wordmark-light" : ""}`} aria-label="EventRefund home"><span className="er-wordmark-mark" aria-hidden="true">er</span><span>EventRefund</span></Link>;
+}
+
+function WalletControl() {
+  const wallet = useWallet();
+  const [error, setError] = useState("");
+  async function connect() {
+    setError("");
+    try { await wallet.connectWallet(); } catch (e) { setError(e instanceof Error ? e.message : "Wallet connection failed"); }
+  }
+  const label = wallet.isLoading ? "Checking wallet…" : wallet.isConnected ? formatAddress(wallet.address) : "Connect wallet";
+  return <div className="er-wallet-control">
+    <button className="er-wallet-button" onClick={wallet.isConnected ? wallet.disconnectWallet : connect} disabled={wallet.isLoading} aria-label={wallet.isConnected ? "Disconnect wallet" : "Connect wallet"}>{label}</button>
+    {wallet.isConnected && !wallet.isOnCorrectNetwork && <span className="er-wallet-note">Switch to Bradbury</span>}
+    {error && <span className="er-wallet-error" role="status">{error}</span>}
+  </div>;
+}
+
+function pageTitle(pathname: string) {
+  if (pathname === "/events") return "Events";
+  if (pathname === "/events/new") return "Create event";
+  if (pathname.startsWith("/events/")) return "Event detail";
+  if (pathname.startsWith("/tickets/")) return "Ticket detail";
+  if (pathname === "/verify") return "Verify ticket";
+  if (pathname.startsWith("/verify/")) return "Verification result";
+  return "Workspace";
+}
+
+export function EventRefundShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  return <div className="er-product-shell">
+    <aside className={`er-sidebar ${open ? "is-open" : ""}`}>
+      <div className="er-sidebar-head"><Wordmark /><button className="er-mobile-close" onClick={() => setOpen(false)} aria-label="Close navigation">×</button></div>
+      <p className="er-sidebar-label">Workspace</p>
+      <nav className="er-sidebar-nav" aria-label="Workspace navigation">
+        {navigation.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={pathname === item.href ? "is-active" : ""}>{item.label}<span aria-hidden="true">↗</span></Link>)}
+      </nav>
+      <div className="er-sidebar-footer"><p>Bradbury</p><span>Testnet · chain 4221</span></div>
+    </aside>
+    {open && <button className="er-sidebar-scrim" onClick={() => setOpen(false)} aria-label="Close navigation" />}
+    <div className="er-product-main">
+      <header className="er-product-topbar">
+        <div className="er-topbar-inner"><button className="er-menu-button" onClick={() => setOpen(true)} aria-label="Open navigation">☰</button><div><p className="er-topbar-kicker">EventRefund</p><p className="er-topbar-title">{pageTitle(pathname)}</p></div><div className="er-topbar-actions"><span className="er-command-stub" aria-hidden="true">Search <kbd>⌘ K</kbd></span><WalletControl /></div></div>
+      </header>
+      <main className="er-product-content">{children}</main>
+    </div>
+  </div>;
+}
+
+export function MarketingNav() {
+  return <header className="er-marketing-nav"><Wordmark light /><nav aria-label="Main navigation"><Link href="#how-it-works">How it works</Link><Link href="/events">Open workspace</Link></nav><PillButton href="/verify" variant="outline">Verify a ticket <span aria-hidden="true">↗</span></PillButton></header>;
+}
