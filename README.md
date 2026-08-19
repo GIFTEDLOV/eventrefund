@@ -1,5 +1,7 @@
 # EventRefund
 
+Live application: https://eventrefund.vercel.app
+
 ## Product
 
 EventRefund is a complete user-facing GenLayer application for neutral event-refund eligibility decisions. An organizer commits an event baseline, enables one or more of four supported refund triggers, and fixes exactly two public HTTPS evidence sources on different hostnames. A registered ticket holder can request an assessment using those same committed sources.
