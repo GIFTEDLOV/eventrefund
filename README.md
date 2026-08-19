@@ -71,7 +71,7 @@ The first ticket-registration attempt is preserved as provenance. Transaction `0
 
 - Evidence URLs require HTTPS, bounded length, no fragments, no localhost, no IPv4 literals, and distinct hostnames; they are immutable after event creation.
 - Retrieved pages are bounded readable text and are untrusted data. Page instructions cannot alter evaluator instructions.
-- Model output must be exactly one JSON object with exactly one `verdict` key. Malformed, extra-key, missing-key, unknown, unavailable, timeout, failure, or disagreement paths fail closed to `INCONCLUSIVE` or leave no state change; they never become `NOT_ELIGIBLE`.
+- Model output must be exactly one JSON object with exactly one `verdict` key. Malformed, extra-key, missing-key, unknown, unavailable, timeout, failure, or disagreement paths become a stored `INCONCLUSIVE` assessment when the assessment transaction executes; they never become `NOT_ELIGIBLE`. Precondition or transaction-execution failures can leave state unchanged.
 - Validators independently retrieve and interpret the same committed sources. The leader is not trusted.
 - Writes use a client-side pending-hash record, broadcast once, reconcile the same hash, require finality and successful execution, then verify expected stored state.
 
@@ -93,6 +93,13 @@ Contract API:
 - `get_event(...)`, `get_ticket(...)`, `get_assessment(...)`, `get_refund_authorization(...)`
 - `get_event_ids()`, `get_ticket_ids()`, `get_assessment_ids()`
 - `contract_info()`
+
+Contract rules and digest details:
+
+- `create_event` requires a non-empty event ID, title, schedule, and venue; at least one supported trigger; and exactly two HTTPS evidence URLs on different hostnames. Event IDs are unique. If `HEADLINER_CHANGED` is enabled, the original headliner baseline is required.
+- `register_ticket(ticket_id, event_id, holder_address)` is organizer-only, requires a unique ticket ID, and normalizes the holder through `Address(holder_address).as_hex`.
+- `assess_ticket(ticket_id)` is holder-only, creates incrementing IDs such as `ticket_id#1`, and rejects further assessment after a refund authorization exists. Both committed URLs are rendered as bounded text for the leader and validators.
+- The result digest is not an evidence hash. It is SHA-256 over UTF-8 canonical JSON containing `assessment_id`, `event_id`, `ticket_id`, and `verdict`, serialized with sorted keys and compact separators.
 
 Selected pinned sources:
 
